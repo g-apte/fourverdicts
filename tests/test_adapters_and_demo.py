@@ -88,6 +88,61 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(order, [("seen", 0)])
 
 
+class SignatureTests(unittest.TestCase):
+    """The decorator must call the tool the way the tool was written, including after a MODIFY."""
+
+    def governed(self, fn, rule=lambda r, p: PolicyResult.allow(r), name=None):
+        engine = GovernanceEngine()
+        engine.register(Rule(rule))
+        return governed_tool(engine, CONTEXT, name=name)(fn)
+
+    def test_positional_only_arguments(self):
+        def fn(a, /, b=2):
+            return (a, b)
+        self.assertEqual(self.governed(fn)(1), (1, 2))
+        self.assertEqual(self.governed(fn)(1, b=3), (1, 3))
+
+    def test_star_args_and_star_kwargs(self):
+        def fn(first, *rest, **extra):
+            return (first, rest, extra)
+        self.assertEqual(self.governed(fn)(1, 2, 3, k=4), (1, (2, 3), {"k": 4}))
+
+    def test_modify_works_with_unusual_signatures(self):
+        def bump(r, p):
+            args = dict(p["arguments"])
+            args["first"] = 99
+            return PolicyResult.modify(r, {**p, "arguments": args})
+        def fn(first, /, *rest, **extra):
+            return (first, rest, extra)
+        self.assertEqual(self.governed(fn, bump)(1, 2, k=3), (99, (2,), {"k": 3}))
+
+    def test_malformed_modified_payloads_fail_closed(self):
+        bad_payloads = {
+            "no arguments key": {"amount": 2},
+            "arguments not a mapping": {"tool": "t", "arguments": [1]},
+            "a missing argument": {"tool": "t", "arguments": {}},
+            "an extra argument": {"tool": "t", "arguments": {"amount": 1, "extra": 2}},
+            "not a mapping at all": "x",
+        }
+        calls = []
+        def fn(amount):
+            calls.append(amount)
+        for label, payload in bad_payloads.items():
+            with self.subTest(label):
+                tool = self.governed(fn, lambda r, p, pl=payload: PolicyResult.modify(r, pl))
+                with self.assertRaises(GovernanceDenied):
+                    tool(1)
+        self.assertEqual(calls, [])
+
+    def test_the_name_option_sets_the_tool_name_the_policies_see(self):
+        seen = []
+        def fn(x):
+            return x
+        tool = self.governed(fn, lambda r, p: (seen.append(p["tool"]), PolicyResult.allow(r))[1], name="custom")
+        tool(1)
+        self.assertEqual(seen, ["custom"])
+
+
 class ReportAndDemoTests(unittest.TestCase):
     def test_report_lists_every_policy_and_the_decision(self):
         engine = GovernanceEngine()

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import functools
 import inspect
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Mapping, Optional
 
 from fourverdicts.engine import GovernanceEngine, GovernanceOutcome
 from fourverdicts.types import ExecutionPhase, GovernanceAction, GovernanceContext
@@ -57,7 +57,14 @@ def governed_tool(
             if outcome.action is GovernanceAction.REQUIRE_APPROVAL:
                 if approver is None or not approver(outcome):
                     raise GovernanceDenied(outcome, f"{tool_name} not approved: {outcome.reason}")
-            return fn(**outcome.payload["arguments"])
+
+            # Whatever the verdict, the arguments we run with must still match the tool's signature.
+            # A malformed amended payload fails closed instead of raising a confusing error.
+            amended = outcome.payload.get("arguments") if isinstance(outcome.payload, Mapping) else None
+            if not isinstance(amended, Mapping) or set(amended) != set(bound.arguments):
+                raise GovernanceDenied(outcome, f"{tool_name} denied: the amended payload does not match the tool's arguments")
+            bound.arguments = {name: amended[name] for name in signature.parameters if name in amended}
+            return fn(*bound.args, **bound.kwargs)
 
         return wrapper
 
