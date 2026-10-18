@@ -29,7 +29,7 @@ class ExecutionPhase(str, Enum):
     """The seven points in an agent's life where governance can look and decide."""
 
     INPUT = "INPUT"                        # a prompt arrives
-    STATE_PLAN = "STATE_PLAN"              # the agent plans or updates its state
+    STATE_PLAN = "STATE_PLAN"              # the agent plans its next step
     TOOL_PRE = "TOOL_PRE"                  # just before a tool runs
     TOOL_POST = "TOOL_POST"                # just after a tool returns
     OUTPUT = "OUTPUT"                      # before the answer leaves

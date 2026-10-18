@@ -128,7 +128,8 @@ class ExampleTests(unittest.TestCase):
                               capture_output=True, text=True, env={"PYTHONPATH": str(root / "src")}, timeout=60)
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("ALLOW", proc.stdout)
-        self.assertIn("5000 is above 1000", proc.stdout)
+        self.assertIn("MODIFY (capped at 1000)", proc.stdout)
+        self.assertIn("5000 is more than twice the limit of 1000", proc.stdout)
 
 
 if __name__ == "__main__":

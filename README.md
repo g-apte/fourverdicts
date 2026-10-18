@@ -3,9 +3,9 @@
 **Four verdicts for governing agentic AI: allow, modify, require approval, deny.**
 A reference edition by Advaita AI.
 
-Most guardrails watch a prompt go in and an answer come out. Agents do more than answer: they plan,
-call tools that move money or change systems, keep state, and hand work to other agents. Governing
-an agent means looking at those moments, and deciding at each one.
+Most guardrails watch a prompt go in and an answer come out. Agents do more than answer: they plan in
+loops, call tools that move money or change systems, and hand work to other agents. Governing an
+agent means looking at those moments, and deciding at each one.
 
 > This is an illustrative reference edition, built to explain how agentic AI can be governed. It is
 > small on purpose. It is not production software.
@@ -28,25 +28,37 @@ flowchart LR
     B --> C[TOOL_PRE<br>before a tool runs]
     C --> D[TOOL_POST<br>after a tool returns]
     D --> E[OUTPUT<br>before the answer leaves]
+    D -.->|next step| B
     B -.-> F[INTER_AGENT_OUT<br>work handed to another agent]
     F -.-> G[INTER_AGENT_IN<br>that agent's result returns]
+    G -.->|result| B
 ```
 
 ## A policy in a few lines
 ```python
 from fourverdicts import BasePolicy, ExecutionPhase, PolicyResult
 
-class NoLargeTransfers(BasePolicy):
+class TransferLimit(BasePolicy):
     def __init__(self, limit):
-        super().__init__("no-large-transfers", phases=frozenset({ExecutionPhase.TOOL_PRE}))
+        super().__init__("transfer-limit", phases=frozenset({ExecutionPhase.TOOL_PRE}))
         self.limit = limit
 
     def evaluate(self, payload, context):
-        if payload["amount"] > self.limit:
-            return PolicyResult.deny(self.rule_id, f"{payload['amount']} is above {self.limit}")
-        return PolicyResult.allow(self.rule_id, "within the limit")
+        amount = payload["amount"]
+        if amount <= self.limit:
+            return PolicyResult.allow(self.rule_id, "within the limit")
+        if amount <= 2 * self.limit:   # cap it
+            return PolicyResult.modify(self.rule_id, {**payload, "amount": self.limit},
+                                       f"capped at {self.limit}")
+        return PolicyResult.deny(self.rule_id, f"{amount} is more than twice the limit of {self.limit}")
 ```
 Run the full example: `PYTHONPATH=src python3 examples/hello_policy.py`
+
+```
+transfer    250: ALLOW  (within the limit)
+transfer   1500: MODIFY (capped at 1000)
+transfer   5000: DENY   (5000 is more than twice the limit of 1000)
+```
 
 Two settings matter for every policy:
 - **Enforcement mode:** `BLOCK` (a violation is a deny), `ESCALATE` (ask a person instead), or
@@ -61,6 +73,11 @@ Two settings matter for every policy:
 - **After that:** a runnable demo of an agent making a transfer that is allowed, capped, denied or
   sent for approval.
 
+## Known gaps
+- **Memory.** What an agent reads from and writes to long-term memory is not governed here. If memory
+  is reached through a tool call, that call passes `TOOL_PRE` and `TOOL_POST` like any other tool;
+  memory built into an agent framework is not seen at all. It is an open question, and an important one.
+
 ## Run the tests
 ```
 PYTHONPATH=src python3 -m unittest discover -s tests
@@ -73,8 +90,8 @@ should do, how the verdicts combine, and where it should fail closed. The AI wro
 
 How it was checked:
 - Unit tests, run on Python 3.11 and 3.14 on every change.
-- Deliberate-breakage checks: I broke the code seven ways (for example, making the strictest verdict
-  the loosest) and confirmed the tests caught each one.
+- Deliberate-breakage checks: I broke the code on purpose (for example, making the strictest verdict
+  the loosest) and confirmed the tests caught each break.
 - A review by a second AI model from a different family, run in a fresh session that had not seen the
   first one's reasoning. It found three defects, including a policy that could change the payload in
   place without the engine noticing, and two untested behaviours. They were fixed before publication,
