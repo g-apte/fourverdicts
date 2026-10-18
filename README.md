@@ -85,11 +85,29 @@ Two settings matter for every policy:
   governance layer that waves actions through when it breaks is not governing.
 
 ## What is in this edition, and what comes next
-- **Now:** the vocabulary (verdicts, phases), the policy interface, and an example.
-- **Next:** how several policies reach one decision, and what happens when the governance layer is
-  overloaded.
+- **Now:** the vocabulary (verdicts, phases), the policy interface, and the engine that reaches one
+  decision from several policies.
+- **Next:** what happens when the governance layer itself is overloaded.
 - **After that:** a runnable demo of an agent making a transfer that is allowed, capped, denied or
   sent for approval.
+
+## Several policies, one decision
+```python
+from fourverdicts import GovernanceEngine, GovernanceContext, ExecutionPhase
+
+engine = GovernanceEngine()
+engine.register(TransferLimit(limit=1_000))
+outcome = engine.evaluate(ExecutionPhase.TOOL_PRE,
+                          GovernanceContext(session_id="s", agent_id="a"),
+                          {"amount": 5_000})
+print(outcome.action.value, outcome.reason)   # DENY 5000 is more than twice the limit of 1000
+```
+How the engine decides:
+- Policies run in order of `(priority, rule_id)`. Lower priority numbers run first.
+- The **strictest verdict wins**: `DENY`, then `REQUIRE_APPROVAL`, then `MODIFY`, then `ALLOW`.
+- A `MODIFY` rewrites the payload for the policies that run after it.
+- Every policy runs, even after a `DENY`, so the record shows everything that applied.
+- A policy that crashes is a `DENY`, unless you set it to fail open.
 
 ## Known gaps
 - **Memory.** What an agent reads from and writes to long-term memory is not governed here. If memory
