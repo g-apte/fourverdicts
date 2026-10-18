@@ -41,7 +41,9 @@ class BasePolicy(ABC):
         enforcement_mode: EnforcementMode = EnforcementMode.BLOCK,
         fail_mode: FailMode = FailMode.FAIL_CLOSED,
     ) -> None:
-        if not rule_id or not rule_id.strip():
+        if not isinstance(rule_id, str):
+            raise TypeError(f"rule_id must be a str, got {type(rule_id).__name__}")
+        if not rule_id.strip():
             raise ValueError("rule_id must not be empty")
         self.rule_id = rule_id
         self.description = description
@@ -60,6 +62,10 @@ class BasePolicy(ABC):
             result = self.evaluate(payload, context)
             if not isinstance(result, PolicyResult):
                 raise TypeError(f"evaluate must return a PolicyResult, got {type(result).__name__}")
+            if not isinstance(result.action, GovernanceAction):
+                raise TypeError(f"action must be a GovernanceAction, got {type(result.action).__name__}")
+            if result.action is GovernanceAction.MODIFY and result.modified_payload is None:
+                raise ValueError("MODIFY returned no payload")
         except Exception as exc:  # a crashing policy must never silently allow
             if self.fail_mode is FailMode.FAIL_OPEN:
                 return PolicyResult.allow(self.rule_id, f"policy error ignored (fail open): {exc}")

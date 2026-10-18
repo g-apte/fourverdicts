@@ -90,5 +90,46 @@ class PolicyTests(unittest.TestCase):
         self.assertIs(WrongReturn("w").safe_evaluate({}, CONTEXT).action, GovernanceAction.DENY)
 
 
+class MalformedResultTests(unittest.TestCase):
+    """A policy that returns something malformed has a policy error, so its fail mode applies."""
+
+    def test_rule_id_must_be_a_string(self):
+        with self.assertRaises(TypeError):
+            Crashing(5)
+
+    def test_modify_without_a_payload_is_a_policy_error(self):
+        broken = PolicyResult(GovernanceAction.MODIFY, "f")
+        self.assertIs(Fixed(broken).safe_evaluate({}, CONTEXT).action, GovernanceAction.DENY)
+        for mode in (EnforcementMode.ESCALATE, EnforcementMode.WARN_ONLY):
+            with self.subTest(mode):
+                self.assertIs(Fixed(broken, enforcement_mode=mode).safe_evaluate({}, CONTEXT).action,
+                              GovernanceAction.DENY)
+        self.assertIs(Fixed(broken, fail_mode=FailMode.FAIL_OPEN).safe_evaluate({}, CONTEXT).action,
+                      GovernanceAction.ALLOW)
+
+    def test_falsy_but_present_modified_payloads_are_valid(self):
+        for payload in ({}, 0, "", []):
+            with self.subTest(repr(payload)):
+                result = Fixed(PolicyResult.modify("f", payload)).safe_evaluate({}, CONTEXT)
+                self.assertIs(result.action, GovernanceAction.MODIFY)
+                self.assertEqual(result.modified_payload, payload)
+
+    def test_action_must_be_a_governance_action(self):
+        plain = PolicyResult("ALLOW", "f")
+        self.assertIs(Fixed(plain).safe_evaluate({}, CONTEXT).action, GovernanceAction.DENY)
+
+
+class ExampleTests(unittest.TestCase):
+    def test_hello_policy_example_runs(self):
+        import subprocess, sys
+        from pathlib import Path
+        root = Path(__file__).resolve().parent.parent
+        proc = subprocess.run([sys.executable, str(root / "examples" / "hello_policy.py")],
+                              capture_output=True, text=True, env={"PYTHONPATH": str(root / "src")}, timeout=60)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("ALLOW", proc.stdout)
+        self.assertIn("5000 is above 1000", proc.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

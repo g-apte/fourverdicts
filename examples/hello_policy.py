@@ -13,7 +13,7 @@ class NoLargeTransfers(BasePolicy):
 
     def evaluate(self, payload, context):
         if payload["amount"] > self.limit:
-            return PolicyResult.deny(self.rule_id, f"{payload['amount']} is above the limit of {self.limit}")
+            return PolicyResult.deny(self.rule_id, f"{payload['amount']} is above {self.limit}")
         return PolicyResult.allow(self.rule_id, "within the limit")
 
 
