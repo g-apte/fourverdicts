@@ -76,8 +76,9 @@ How it was checked:
 - Deliberate-breakage checks: I broke the code seven ways (for example, making the strictest verdict
   the loosest) and confirmed the tests caught each one.
 - A review by a second AI model from a different family, run in a fresh session that had not seen the
-  first one's reasoning. It found four problems, including a policy that could change the payload in
-  place without the engine noticing. They were fixed before publication, with tests.
+  first one's reasoning. It found three defects, including a policy that could change the payload in
+  place without the engine noticing, and two untested behaviours. They were fixed before publication,
+  with tests.
 
 I am responsible for what is published here.
 
