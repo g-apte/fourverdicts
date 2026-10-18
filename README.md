@@ -67,5 +67,16 @@ PYTHONPATH=src python3 -m unittest discover -s tests
 ```
 Python 3.11 or later. No dependencies.
 
+## How this was built
+This edition was written with AI assistance (Anthropic's Claude), under my direction. I decided what it
+should do, how the verdicts combine, and where it should fail closed. The AI wrote the code from that design.
+
+How it was checked:
+- Unit tests, run on Python 3.11 and 3.14 on every change.
+- Deliberate-breakage checks: I broke the code seven ways (for example, making the strictest verdict
+  the loosest) and confirmed the tests caught each one.
+
+I am responsible for what is published here.
+
 ## Licence
 Apache 2.0. See `LICENSE` and `NOTICE`.
