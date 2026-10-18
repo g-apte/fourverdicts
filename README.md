@@ -89,8 +89,8 @@ Two settings matter for every policy:
   decision from several policies.
 - **Also:** what happens when the governance layer itself is overloaded: measured, with the method and
   its limits, in [docs/capacity-findings.md](docs/capacity-findings.md).
-- **After that:** a runnable demo of an agent making a transfer that is allowed, capped, denied or
-  sent for approval.
+- **Also:** a decorator that puts the engine in front of an ordinary function, and a runnable demo of an
+  agent making a transfer that is allowed, capped, denied or sent for approval.
 
 ## Several policies, one decision
 ```python
@@ -109,6 +109,58 @@ How the engine decides:
 - A `MODIFY` rewrites the payload for the policies that run after it.
 - Every policy runs, even after a `DENY`, so the record shows everything that applied.
 - A policy that crashes is a `DENY`, unless you set it to fail open.
+
+## See it work
+An agent with one tool, `transfer_funds`, governed by three policies: block a bad account, cap a
+mid-sized transfer, and ask a person about a large one.
+
+```python
+@governed_tool(engine, context, approver=ask_a_person)
+def transfer_funds(to_account: str, amount: float) -> str:
+    ...
+```
+Run the scripted demo: `PYTHONPATH=src python3 examples/transfer_demo.py`
+
+```
+a small transfer: transfer_funds('ACC-1001', 400)
+    blocked-account          ALLOW             destination account is fine
+    soft-cap                 ALLOW             no cap needed
+    large-transfer-approval  ALLOW             below the approval threshold
+  decision: ALLOW  (no policy objected)
+  result: moved 400 to ACC-1001
+
+a transfer above the soft cap: transfer_funds('ACC-1001', 7,500)
+    blocked-account          ALLOW             destination account is fine
+    soft-cap                 MODIFY            capped at 5000
+    large-transfer-approval  ALLOW             below the approval threshold
+  decision: MODIFY  (capped at 5000)
+  result: moved 5,000 to ACC-1001
+
+a transfer to a blocked account: transfer_funds('ACC-9999', 300)
+    blocked-account          DENY              destination account is blocked
+    soft-cap                 ALLOW             no cap needed
+    large-transfer-approval  ALLOW             below the approval threshold
+  decision: DENY  (destination account is blocked)
+  result: BLOCKED, transfer_funds denied: destination account is blocked
+
+a very large transfer (person approves): transfer_funds('ACC-1001', 50,000)
+    blocked-account          ALLOW             destination account is fine
+    soft-cap                 ALLOW             no cap needed
+    large-transfer-approval  REQUIRE_APPROVAL  above 10000: a person must approve
+  decision: REQUIRE_APPROVAL  (above 10000: a person must approve)
+  a person is asked: approved
+  result: moved 50,000 to ACC-1001
+
+a very large transfer (person refuses): transfer_funds('ACC-1001', 80,000)
+    blocked-account          ALLOW             destination account is fine
+    soft-cap                 ALLOW             no cap needed
+    large-transfer-approval  REQUIRE_APPROVAL  above 10000: a person must approve
+  decision: REQUIRE_APPROVAL  (above 10000: a person must approve)
+  a person is asked: refused
+  result: BLOCKED, transfer_funds not approved: above 10000: a person must approve
+```
+`MODIFY` means the tool ran with the capped amount. `REQUIRE_APPROVAL` means a person decided, and
+the tool did not run when they refused.
 
 ## Known gaps
 - **Memory.** What an agent reads from and writes to long-term memory is not governed here. If memory

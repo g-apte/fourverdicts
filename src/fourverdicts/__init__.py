@@ -1,5 +1,6 @@
 """fourverdicts: four verdicts for governing agentic AI. A reference edition by Advaita AI."""
 
+from fourverdicts.adapters import GovernanceDenied, governed_tool
 from fourverdicts.engine import GovernanceEngine, GovernanceOutcome
 from fourverdicts.policy import BasePolicy, EnforcementMode, FailMode
 from fourverdicts.types import (
@@ -11,6 +12,8 @@ from fourverdicts.types import (
 )
 
 __all__ = [
+    "GovernanceDenied",
+    "governed_tool",
     "GovernanceEngine",
     "GovernanceOutcome",
     "BasePolicy",
