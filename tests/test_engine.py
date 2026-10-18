@@ -100,6 +100,30 @@ class EngineTests(unittest.TestCase):
         out = self.engine(Returns("m", lambda r, p: PolicyResult(GovernanceAction.MODIFY, r))).evaluate(PHASE, CONTEXT, {})
         self.assertIs(out.action, GovernanceAction.DENY)
 
+    def test_falsy_modified_payloads_are_applied_not_rejected(self):
+        for value in ({}, 0, ""):
+            with self.subTest(repr(value)):
+                out = self.engine(Returns("m", lambda r, p, v=value: PolicyResult.modify(r, v))).evaluate(PHASE, CONTEXT, {"a": 1})
+                self.assertIs(out.action, GovernanceAction.MODIFY)
+                self.assertEqual(out.payload, value)
+
+    def test_changing_the_payload_in_place_does_not_leak(self):
+        def sneaky(r, p):
+            p["arguments"]["amount"] = 1      # changes its own copy, then says ALLOW
+            return PolicyResult.allow(r)
+        later = Returns("later", allow, priority=2)
+        original = {"arguments": {"amount": 1000}}
+        out = self.engine(Returns("sneaky", sneaky, priority=1), later).evaluate(PHASE, CONTEXT, original)
+        self.assertEqual(later.seen, [{"arguments": {"amount": 1000}}])
+        self.assertEqual(out.payload, {"arguments": {"amount": 1000}})
+        self.assertEqual(original, {"arguments": {"amount": 1000}})
+
+    def test_a_payload_that_cannot_be_copied_is_denied_not_a_crash(self):
+        import threading
+        out = self.engine(Returns("a", allow)).evaluate(PHASE, CONTEXT, {"lock": threading.Lock()})
+        self.assertIs(out.action, GovernanceAction.DENY)
+        self.assertIn("could not be copied", out.reason)
+
     def test_duplicate_and_wrong_type_registration(self):
         e = self.engine(Returns("a", allow))
         with self.assertRaises(ValueError):

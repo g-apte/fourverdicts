@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, Tuple
 
@@ -55,6 +56,7 @@ class GovernanceEngine:
         - a MODIFY verdict rewrites the payload for the policies that run after it;
         - every policy runs, even after a DENY, so the record shows everything that applied;
         - a policy that crashes is a DENY unless it was set to fail open.
+        - each policy sees its own copy of the payload; only a MODIFY verdict changes it.
         """
         ordered = sorted(
             (p for p in self._policies.values() if phase in p.phases),
@@ -63,12 +65,16 @@ class GovernanceEngine:
         current = payload
         results = []
         for policy in ordered:
-            result = policy.safe_evaluate(current, context)
+            try:
+                # Each policy gets its own copy, so changing the payload in place cannot change what
+                # later policies see or what the tool runs with. The only way to change it is MODIFY.
+                seen = deepcopy(current)
+            except Exception as exc:
+                results.append(PolicyResult.deny(policy.rule_id, f"payload could not be copied: {exc}"))
+                continue
+            result = policy.safe_evaluate(seen, context)
             if result.action is GovernanceAction.MODIFY:
-                if result.modified_payload is None:
-                    result = PolicyResult.deny(policy.rule_id, "MODIFY returned no payload")
-                else:
-                    current = result.modified_payload
+                current = result.modified_payload
             results.append(result)
 
         if not results:
