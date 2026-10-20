@@ -21,7 +21,7 @@ agent means looking at those moments, and deciding at each one.
 When several policies disagree, the strictest verdict wins: deny, then require approval, then modify,
 then allow.
 
-## Seven points where an agent can be governed
+## Seven points where an AI agent can be governed
 ```mermaid
 flowchart LR
     A[INPUT<br>a prompt arrives] --> B[STATE_PLAN<br>the agent plans]
@@ -33,6 +33,8 @@ flowchart LR
     F -.-> G[INTER_AGENT_IN<br>that agent's result returns]
     G -.->|result| B
 ```
+
+<p align="center"><sub>Ghanasham Apte · Advaita AI · github.com/g-apte/fourverdicts</sub></p>
 
 ## A policy in a few lines
 ```python
