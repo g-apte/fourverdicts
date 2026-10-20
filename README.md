@@ -84,6 +84,14 @@ PYTHONPATH=src python3 -m unittest discover -s tests
 ```
 Python 3.11 or later. No dependencies.
 
+## Talk to us
+fourverdicts is a taster. If you are putting AI agents into production and need to show what they were
+allowed to do, Advaita AI works on exactly this: policies, approval steps and evidence an auditor can
+check.
+
+- Message me on [LinkedIn](https://www.linkedin.com/in/ghanashamapte/)
+- Questions or ideas about this repository: open an issue.
+
 ## How this was built
 This edition was written with AI assistance (Anthropic's Claude), under my direction. I decided what it
 should do, how the verdicts combine, and where it should fail closed. The AI wrote the code from that design.
