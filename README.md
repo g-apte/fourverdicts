@@ -10,6 +10,22 @@ agent means looking at those moments, and deciding at each one.
 > This is an illustrative reference edition, built to explain how agentic AI can be governed. It is
 > small on purpose. It is not production software.
 
+## Try it in 2 minutes
+Python 3.11 or later. Nothing to install.
+
+```bash
+git clone https://github.com/g-apte/fourverdicts.git
+cd fourverdicts
+PYTHONPATH=src python3 examples/hello_policy.py
+```
+
+You should see one policy give three different verdicts:
+```
+transfer    250: ALLOW  (within the limit)
+transfer   1500: MODIFY (capped at 1000)
+transfer   5000: DENY   (5000 is more than twice the limit of 1000)
+```
+
 ## The four verdicts
 | Verdict | Meaning |
 |---|---|
