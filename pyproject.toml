@@ -1,6 +1,6 @@
 [project]
 name = "fourverdicts"
-version = "0.1.0"
+version = "0.3.0"
 description = "Four verdicts for governing agentic AI: allow, modify, require approval, deny. A reference edition by Advaita AI."
 readme = "README.md"
 requires-python = ">=3.11"

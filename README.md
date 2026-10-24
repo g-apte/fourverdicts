@@ -16,15 +16,19 @@ Python 3.11 or later. Nothing to install.
 ```bash
 git clone https://github.com/g-apte/fourverdicts.git
 cd fourverdicts
-PYTHONPATH=src python3 examples/hello_policy.py
+PYTHONPATH=src python3 examples/hello_policy.py     # one policy, three verdicts
+PYTHONPATH=src python3 examples/transfer_demo.py    # an agent making five transfers
 ```
 
-You should see one policy give three different verdicts:
+The first shows one policy give three different verdicts:
 ```
 transfer    250: ALLOW  (within the limit)
 transfer   1500: MODIFY (capped at 1000)
 transfer   5000: DENY   (5000 is more than twice the limit of 1000)
 ```
+The second runs an agent that makes five transfers: one allowed, one capped, one denied, and two that
+are sent to a person (who approves one and refuses the other). The reason for every verdict is printed
+next to it. The full output is under [See it work](#see-it-work).
 
 ## The four verdicts
 | Verdict | Meaning |
