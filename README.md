@@ -87,7 +87,8 @@ Two settings matter for every policy:
 ## What is in this edition, and what comes next
 - **Now:** the vocabulary (verdicts, phases), the policy interface, and the engine that reaches one
   decision from several policies.
-- **Next:** what happens when the governance layer itself is overloaded.
+- **Also:** what happens when the governance layer itself is overloaded: measured, with the method and
+  its limits, in [docs/capacity-findings.md](docs/capacity-findings.md).
 - **After that:** a runnable demo of an agent making a transfer that is allowed, capped, denied or
   sent for approval.
 
