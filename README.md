@@ -116,7 +116,8 @@ How the engine decides:
 
 ## See it work
 An agent with one tool, `transfer_funds`, governed by three policies: block a bad account, cap a
-mid-sized transfer, and ask a person about a large one.
+mid-sized transfer, and ask a person about a large one: up to 5,000 goes through, 5,000 to 10,000 is
+capped at 5,000, and above 10,000 a person decides.
 
 ```python
 @governed_tool(engine, context, approver=ask_a_person)
@@ -135,9 +136,9 @@ a small transfer: transfer_funds('ACC-1001', 400)
 
 a transfer above the soft cap: transfer_funds('ACC-1001', 7,500)
     blocked-account          ALLOW             destination account is fine
-    soft-cap                 MODIFY            capped at 5000
+    soft-cap                 MODIFY            capped at 5,000
     large-transfer-approval  ALLOW             below the approval threshold
-  decision: MODIFY  (capped at 5000)
+  decision: MODIFY  (capped at 5,000)
   result: moved 5,000 to ACC-1001
 
 a transfer to a blocked account: transfer_funds('ACC-9999', 300)
@@ -149,19 +150,19 @@ a transfer to a blocked account: transfer_funds('ACC-9999', 300)
 
 a very large transfer (person approves): transfer_funds('ACC-1001', 50,000)
     blocked-account          ALLOW             destination account is fine
-    soft-cap                 ALLOW             no cap needed
-    large-transfer-approval  REQUIRE_APPROVAL  above 10000: a person must approve
-  decision: REQUIRE_APPROVAL  (above 10000: a person must approve)
+    soft-cap                 ALLOW             above 10,000: left to approval
+    large-transfer-approval  REQUIRE_APPROVAL  above 10,000: a person must approve
+  decision: REQUIRE_APPROVAL  (above 10,000: a person must approve)
   a person is asked: approved
   result: moved 50,000 to ACC-1001
 
 a very large transfer (person refuses): transfer_funds('ACC-1001', 80,000)
     blocked-account          ALLOW             destination account is fine
-    soft-cap                 ALLOW             no cap needed
-    large-transfer-approval  REQUIRE_APPROVAL  above 10000: a person must approve
-  decision: REQUIRE_APPROVAL  (above 10000: a person must approve)
+    soft-cap                 ALLOW             above 10,000: left to approval
+    large-transfer-approval  REQUIRE_APPROVAL  above 10,000: a person must approve
+  decision: REQUIRE_APPROVAL  (above 10,000: a person must approve)
   a person is asked: refused
-  result: BLOCKED, transfer_funds not approved: above 10000: a person must approve
+  result: BLOCKED, transfer_funds not approved: above 10,000: a person must approve
 ```
 `MODIFY` means the tool ran with the capped amount. `REQUIRE_APPROVAL` means a person decided, and
 the tool did not run when they refused.

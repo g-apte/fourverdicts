@@ -160,7 +160,9 @@ class ReportAndDemoTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stderr)
         for expected in ("decision: ALLOW", "decision: MODIFY", "decision: DENY",
                          "decision: REQUIRE_APPROVAL", "moved 5,000 to ACC-1001",
-                         "moved 50,000 to ACC-1001", "not approved"):
+                         "moved 50,000 to ACC-1001", "not approved",
+                         "capped at 5,000", "above 10,000: left to approval",
+                         "above 10,000: a person must approve"):
             self.assertIn(expected, proc.stdout)
 
 

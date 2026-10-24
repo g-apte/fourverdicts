@@ -1,5 +1,8 @@
 """A transfer agent under governance. Scripted, so it runs the same way every time.
 
+The rules: up to 5,000 goes through, 5,000 to 10,000 is capped at 5,000, above 10,000 a person decides,
+and one account is blocked outright.
+
 Run:  PYTHONPATH=src python3 examples/transfer_demo.py
 """
 
@@ -36,7 +39,9 @@ class SoftCap(BasePolicy):
         amount = payload["arguments"]["amount"]
         if SOFT_CAP < amount <= APPROVAL_ABOVE:
             amended = {**payload, "arguments": {**payload["arguments"], "amount": SOFT_CAP}}
-            return PolicyResult.modify(self.rule_id, amended, f"capped at {SOFT_CAP}")
+            return PolicyResult.modify(self.rule_id, amended, f"capped at {SOFT_CAP:,}")
+        if amount > APPROVAL_ABOVE:
+            return PolicyResult.allow(self.rule_id, f"above {APPROVAL_ABOVE:,}: left to approval")
         return PolicyResult.allow(self.rule_id, "no cap needed")
 
 
@@ -46,7 +51,7 @@ class LargeTransferApproval(BasePolicy):
 
     def evaluate(self, payload, context):
         if payload["arguments"]["amount"] > APPROVAL_ABOVE:
-            return PolicyResult.require_approval(self.rule_id, f"above {APPROVAL_ABOVE}: a person must approve")
+            return PolicyResult.require_approval(self.rule_id, f"above {APPROVAL_ABOVE:,}: a person must approve")
         return PolicyResult.allow(self.rule_id, "below the approval threshold")
 
 
